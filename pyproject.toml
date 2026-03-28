@@ -1,0 +1,16 @@
+[project]
+name = "deepwiki-vapi-onboarding-cli"
+version = "0.1.0"
+description = "CLI onboarding assistant powered by DeepWiki MCP and Vapi"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "remote-mcp-cli>=0.8.0",
+]
+
+[project.scripts]
+onboarder = "onboarding_cli.cli:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
