@@ -84,63 +84,63 @@ def _generate_markdown_docs(repo_identifier: str, target_dir: str) -> int:
     path.mkdir(parents=True, exist_ok=True)
 
     files: dict[str, str] = {
-        "01-co-to-robi.md": f"""# Co to robi
+        "01-purpose.md": f"""# Purpose
 
-Repozytorium `{repo_identifier}` to CLI onboarding assistant, który:
-- czyta lokalny kontekst z plików Markdown,
-- odpowiada przez Vapi na pytania onboardingowe,
-- wspiera tematykę: cel projektu, build/setup, architektura, integracje.
+The repository `{repo_identifier}` is a CLI onboarding assistant that:
+- reads local context from Markdown files,
+- answers onboarding questions via Vapi,
+- supports topics: project purpose, build/setup, architecture, and integrations.
 
-## Dla kogo
-- nowi członkowie zespołu,
-- osoby wdrażające się w projekt.
+## Target Audience
+- new team members,
+- people onboarding to the project.
 """,
-        "02-architektura.md": """# Architektura
+        "02-architecture.md": """# Architecture
 
-## Główne komponenty
-- `onboarding_cli/cli.py` – wejście CLI (`ask`, `chat`, `generate-md`).
-- `onboarding_cli/assistant.py` – orkiestracja: klasyfikacja pytania + odpowiedź.
-- `onboarding_cli/markdown_context_client.py` – ładowanie kontekstu z plików `.md`.
-- `onboarding_cli/vapi_client.py` – połączenie z Vapi API.
-- `onboarding_cli/config.py` – konfiguracja ENV i walidacja.
+## Main Components
+- `onboarding_cli/cli.py` – CLI entry point (`ask`, `chat`, `generate-md`).
+- `onboarding_cli/assistant.py` – orchestration: question classification + response.
+- `onboarding_cli/markdown_context_client.py` – loads context from `.md` files.
+- `onboarding_cli/vapi_client.py` – connects to the Vapi API.
+- `onboarding_cli/config.py` – ENV configuration and validation.
 
-## Przepływ
-1. Użytkownik zadaje pytanie.
-2. Kontekst ładowany jest z lokalnych plików Markdown.
-3. Prompt z kontekstem trafia do Vapi.
-4. CLI zwraca odpowiedź.
+## Flow
+1. User asks a question.
+2. Context is loaded from local Markdown files.
+3. Prompt with context is sent to Vapi.
+4. CLI returns the response.
 """,
-        "03-modele-baza.md": """# Modele / baza danych
+        "03-data-models.md": """# Data Models / Database
 
-## Modele
-- Model LLM jest po stronie Vapi (konfigurowany po stronie asystenta Vapi).
-- Po stronie CLI nie ma lokalnego modelu inferencyjnego.
+## Models
+- The LLM model is on Vapi's side (configured within the Vapi assistant).
+- There is no local inference model in the CLI.
 
-## Baza danych
-- Brak lokalnej bazy danych.
-- Źródłem wiedzy onboardingowej są pliki Markdown w `docs/context/`.
+## Database
+- No local database.
+- The onboarding knowledge source is the Markdown files in `docs/context/`.
 """,
-        "04-jak-to-postawic.md": """# Jak to postawić
+        "04-setup.md": """# Setup
 
-## Wymagania
+## Requirements
 - Python 3.10+
-- konto i klucze Vapi
+- Vapi account and keys
 
-## Kroki
+## Steps
 1. `python3 -m venv .venv && source .venv/bin/activate`
 2. `python3 -m pip install -e .`
-3. Uzupełnij `.env` (`VAPI_API_KEY`, `VAPI_ASSISTANT_ID`, itd.)
-4. Wygeneruj/uzupełnij markdowny:
+3. Fill in `.env` (`VAPI_API_KEY`, `VAPI_ASSISTANT_ID`, etc.)
+4. Generate/fill markdown docs:
    - `python3 -m onboarding_cli.cli generate-md`
-5. Uruchom:
+5. Run:
    - `python3 -m onboarding_cli.cli chat`
 """,
-        "05-polaczenia-zewnetrzne.md": """# Połączenia zewnętrzne
+        "05-external-connections.md": """# External Connections
 
 ## Vapi
 - Endpoint: `VAPI_BASE_URL + VAPI_CHAT_PATH`
 - Auth: `Authorization: Bearer VAPI_API_KEY`
-- Wymagany `VAPI_ASSISTANT_ID`.
+- Requires `VAPI_ASSISTANT_ID`.
 """,
     }
 

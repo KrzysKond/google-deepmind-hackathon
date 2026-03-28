@@ -51,20 +51,20 @@ class MarkdownContextClient:
         for path in files:
             score = 0
             name = path.name.lower()
-            if any(term in text for term in ("co to robi", "purpose", "cel", "po co")):
-                if "co-to-robi" in name:
+            if any(term in text for term in ("purpose", "goal", "why", "what does it do")):
+                if "purpose" in name:
                     score += 5
-            if any(term in text for term in ("archi", "architekt", "architecture")):
-                if "architekt" in name:
+            if any(term in text for term in ("architecture", "design", "components")):
+                if "architecture" in name:
                     score += 5
-            if any(term in text for term in ("modele", "baza", "model", "database", "db")):
-                if "modele" in name or "baza" in name:
+            if any(term in text for term in ("model", "database", "db", "data")):
+                if "model" in name or "database" in name:
                     score += 5
-            if any(term in text for term in ("postawić", "setup", "run", "build", "deploy")):
-                if "postawic" in name or "setup" in name:
+            if any(term in text for term in ("setup", "run", "build", "deploy", "install")):
+                if "setup" in name or "build" in name:
                     score += 5
-            if any(term in text for term in ("zewn", "external", "integration", "api")):
-                if "polaczenia" in name or "integrac" in name:
+            if any(term in text for term in ("external", "integration", "api", "connection")):
+                if "connection" in name or "integration" in name:
                     score += 5
             ranking.append((score, path))
 
