@@ -37,11 +37,11 @@ class AppConfig:
     vapi_base_url: str
     vapi_chat_path: str
     vapi_assistant_id: str
-    deepwiki_mcp_config_path: str
-    deepwiki_mcp_server: str
-    deepwiki_mcp_cli_bin: str
-    deepwiki_repo_name: str
-    deepwiki_fallback_message: str
+    markdown_context_dir: str
+    voice_use_pyaudio: bool
+    voice_input_device: str
+    voice_language: str
+    voice_tts_rate: int
     repo_identifier: str
     system_context: str
 
@@ -108,31 +108,21 @@ def _resolve_repo_identifier() -> str:
     return _normalize_repo_identifier(detected_repo)
 
 
-def _derive_deepwiki_repo_name(repo_identifier: str) -> str:
-    explicit_repo_name = os.getenv("DEEPWIKI_REPO_NAME", "").strip()
-    if explicit_repo_name:
-        return explicit_repo_name
-
-    parts = [segment for segment in repo_identifier.split("/") if segment]
-    if len(parts) >= 3:
-        # host/owner/repo -> owner/repo
-        return "/".join(parts[1:])
-    if len(parts) == 2:
-        return "/".join(parts)
-    return repo_identifier
+def _as_int(name: str, default: int) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
 
 
-def _resolve_mcp_config_path() -> str:
-    configured = os.getenv("DEEPWIKI_MCP_CONFIG_PATH", "./mcp_servers.json").strip()
-    configured_path = Path(configured)
-    if configured_path.exists():
-        return configured
-
-    if configured == "./mcp_servers.json":
-        fallback = Path("./mcp_servers.example.json")
-        if fallback.exists():
-            return str(fallback)
-    return configured
+def _as_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name, "").strip().lower()
+    if not raw:
+        return default
+    return raw in {"1", "true", "yes", "on"}
 
 
 def load_config() -> AppConfig:
@@ -144,17 +134,11 @@ def load_config() -> AppConfig:
         vapi_base_url=os.getenv("VAPI_BASE_URL", "https://api.vapi.ai").strip(),
         vapi_chat_path=os.getenv("VAPI_CHAT_PATH", "/chat").strip(),
         vapi_assistant_id=_required("VAPI_ASSISTANT_ID"),
-        deepwiki_mcp_config_path=_resolve_mcp_config_path(),
-        deepwiki_mcp_server=os.getenv("DEEPWIKI_MCP_SERVER", "deepwiki").strip(),
-        deepwiki_mcp_cli_bin=os.getenv("DEEPWIKI_MCP_CLI_BIN", "remote-mcp-cli").strip(),
-        deepwiki_repo_name=_derive_deepwiki_repo_name(repo_identifier),
-        deepwiki_fallback_message=os.getenv(
-            "DEEPWIKI_FALLBACK_MESSAGE",
-            (
-                "I could not retrieve DeepWiki context. Verify mcp-cli installation and "
-                "DeepWiki MCP configuration."
-            ),
-        ).strip(),
+        markdown_context_dir=os.getenv("MARKDOWN_CONTEXT_DIR", "./docs/context").strip(),
+        voice_use_pyaudio=_as_bool("VOICE_USE_PYAUDIO", False),
+        voice_input_device=os.getenv("VOICE_INPUT_DEVICE", "default").strip(),
+        voice_language=os.getenv("VOICE_LANGUAGE", "en-US").strip(),
+        voice_tts_rate=_as_int("VOICE_TTS_RATE", 180),
         repo_identifier=repo_identifier,
         system_context=os.getenv(
             "SYSTEM_CONTEXT",

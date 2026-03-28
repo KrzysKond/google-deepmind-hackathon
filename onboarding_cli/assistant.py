@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from onboarding_cli.deepwiki_mcp_client import DeepWikiMcpClient
 from onboarding_cli.vapi_client import VapiClient
 
 
@@ -13,7 +12,7 @@ Focus = str
 class AssistantAnswer:
     focus: Focus
     answer: str
-    deepwiki_context: str
+    context: str
 
 
 def classify_focus(question: str) -> Focus:
@@ -35,47 +34,43 @@ def classify_focus(question: str) -> Focus:
 class OnboardingAssistant:
     def __init__(
         self,
-        deepwiki_client: DeepWikiMcpClient,
+        context_client: object,
         vapi_client: VapiClient,
         system_context: str,
     ) -> None:
-        self._deepwiki_client = deepwiki_client
+        self._context_client = context_client
         self._vapi_client = vapi_client
         self._system_context = system_context
 
     def answer(self, question: str) -> AssistantAnswer:
         focus = classify_focus(question)
-        deepwiki_context = self._deepwiki_client.ask(question)
-        if self._is_mcp_failure(deepwiki_context):
+        context = self._context_client.ask(question)
+        if self._is_context_failure(context):
             return AssistantAnswer(
                 focus=focus,
                 answer=(
-                    "MCP-only mode: DeepWiki context is unavailable, so I cannot answer this "
-                    "question yet. Fix MCP access/indexing and retry."
+                    "Markdown mode: context is unavailable, so I cannot answer this question "
+                    "yet. Generate or fill Markdown onboarding files and retry."
                 ),
-                deepwiki_context=deepwiki_context,
+                context=context,
             )
         answer = self._vapi_client.generate_answer(
             question=question,
             focus=focus,
-            deepwiki_context=deepwiki_context,
+            deepwiki_context=context,
             system_context=self._system_context,
         )
         return AssistantAnswer(
             focus=focus,
             answer=answer,
-            deepwiki_context=deepwiki_context,
+            context=context,
         )
 
     @staticmethod
-    def _is_mcp_failure(context: str) -> bool:
+    def _is_context_failure(context: str) -> bool:
         text = context.lower()
         failure_markers = (
-            "deepwiki mcp call failed",
-            "could not retrieve deepwiki context",
-            "unsupported cli command style",
-            "repository not found",
-            "error processing question",
-            "validation error",
+            "markdown context unavailable",
+            "no .md files found",
         )
         return any(marker in text for marker in failure_markers)

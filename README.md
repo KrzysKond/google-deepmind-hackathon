@@ -1,12 +1,12 @@
-# DeepWiki + Vapi Onboarding CLI (Python)
+# Markdown + Vapi Onboarding CLI (Python)
 
 This project provides a Python CLI assistant for onboarding conversations about a codebase.
 
 It combines:
-- **DeepWiki MCP** for repository-aware context (`ask_question` tool)
+- **Local Markdown context** (`docs/context/*.md`) as knowledge base
 - **Vapi** for conversational final answers
 
-The CLI runs in MCP-only mode for knowledge grounding: if DeepWiki MCP context is unavailable, it returns an MCP error instead of generating a non-grounded answer.
+The CLI runs in Markdown-first mode for grounding: if Markdown context is missing, it asks you to generate/fill docs first.
 
 The assistant is optimized for common onboarding questions:
 - what the project is for
@@ -17,8 +17,8 @@ The assistant is optimized for common onboarding questions:
 ## 1) Prerequisites
 
 - Python 3.10+
-- `remote-mcp-cli` available in your shell
 - Vapi API key + assistant ID
+- For voice mode: `SpeechRecognition` + microphone backend (`PyAudio`) and TTS backend (`pyttsx3` or `spd-say`)
 
 ## 2) Configure
 
@@ -32,17 +32,8 @@ cp env.example .env
 - `VAPI_API_KEY`
 - `VAPI_ASSISTANT_ID`
 - (optional) `VAPI_BASE_URL`, `VAPI_CHAT_PATH`
-- (optional) DeepWiki MCP settings
-- (optional) `DEEPWIKI_REPO_NAME` (e.g. `owner/repo`, overrides auto-derived repo name)
+- (optional) `MARKDOWN_CONTEXT_DIR` (default: `./docs/context`)
 - `TARGET_REPO` (recommended; format: `github.com/org/repo`)
-
-3. Copy DeepWiki MCP server config:
-
-```bash
-cp mcp_servers.example.json mcp_servers.json
-```
-
-If `mcp_servers.json` is missing, the app automatically falls back to `mcp_servers.example.json`.
 
 ## 3) Install
 
@@ -50,11 +41,10 @@ If `mcp_servers.json` is missing, the app automatically falls back to `mcp_serve
 python -m pip install -e .
 ```
 
-This installs project dependencies, including `remote-mcp-cli`.
-Quick check:
+Then generate base Markdown context files:
 
 ```bash
-remote-mcp-cli --help
+python3 -m onboarding_cli.cli generate-md
 ```
 
 ## 4) Usage
@@ -71,7 +61,29 @@ Interactive chat:
 onboarder chat
 ```
 
-Show retrieved DeepWiki context:
+Voice chat (microphone in, spoken answer out):
+
+```bash
+onboarder voice-chat
+```
+
+If you have ALSA/JACK warnings, use the default `arecord` path (already default):
+- `VOICE_USE_PYAUDIO=false`
+- `VOICE_INPUT_DEVICE=default`
+
+You can list ALSA capture devices and set one explicitly:
+
+```bash
+arecord -l
+```
+
+Then put in `.env`, for example:
+
+```bash
+VOICE_INPUT_DEVICE=hw:0,0
+```
+
+Show retrieved Markdown context:
 
 ```bash
 onboarder --show-context ask "What external services are connected?"
@@ -79,10 +91,8 @@ onboarder --show-context ask "What external services are connected?"
 
 ## Notes on API Compatibility
 
-Vapi and MCP integrations can vary by account/setup and endpoint version.
+Vapi integrations can vary by account/setup and endpoint version.
 If your Vapi account expects a different payload shape or endpoint, update `onboarding_cli/vapi_client.py` (`generate_answer` method).
-
-If your DeepWiki MCP tool name or argument shape differs from `ask_question` + `{"question": ...}`, update `onboarding_cli/deepwiki_mcp_client.py`.
 
 ## Repository Detection and Safety
 

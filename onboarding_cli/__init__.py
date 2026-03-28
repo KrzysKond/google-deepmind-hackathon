@@ -2,6 +2,7 @@ __all__ = [
     "assistant",
     "cli",
     "config",
-    "deepwiki_mcp_client",
+    "markdown_context_client",
     "vapi_client",
+    "voice_io",
 ]

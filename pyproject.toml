@@ -5,7 +5,8 @@ description = "CLI onboarding assistant powered by DeepWiki MCP and Vapi"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "remote-mcp-cli>=0.8.0",
+  "pyttsx3>=2.90",
+  "SpeechRecognition>=3.10.4",
 ]
 
 [project.scripts]

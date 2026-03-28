@@ -77,6 +77,12 @@ class VapiClient:
                 value = payload.get(key)
                 if isinstance(value, str) and value.strip():
                     return value.strip()
+                if key == "output" and isinstance(value, list):
+                    for item in reversed(value):
+                        if isinstance(item, dict):
+                            content = item.get("content")
+                            if isinstance(content, str) and content.strip():
+                                return content.strip()
 
             messages = payload.get("messages")
             if isinstance(messages, list):
