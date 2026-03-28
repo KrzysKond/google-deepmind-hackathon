@@ -1,56 +1,78 @@
-### Architektura Wtyczki VS Code
-
 ```mermaid
 flowchart LR
-    subgraph VSCode[Visual Studio Code]
-        Core[Rdzeń Edytora / Główne UI]
+    subgraph VSCode["Visual Studio Code"]
+        CoreUI["Główne okno / Interfejs Edytora"]
     end
 
-    subgraph ExtHost[Proces Extension Host Node.js]
-        API[VS Code API]
-        Ext[Kod Wtyczki \n src/extension.ts]
-        Manifest[package.json \n Zdarzenia aktywacji i punkty rozszerzeń]
+    subgraph ExtHost["Proces Extension Host (Node.js)"]
+        API["VS Code API"]
+        Manifest["package.json (Zdarzenia i Komendy)"]
         
-        Ext -.-> Manifest
-        Ext <--> API
+        subgraph PluginLogic["Kod Wtyczki (src/)"]
+            Main["extension.ts (Punkt wejścia)"]
+            VapiClient["vapiClient.ts (Logika API)"]
+        end
+        
+        Main <-->|"Wywołuje"| API
+        Main -->|"Instancjonuje"| VapiClient
+        Main -.->|"Odczytuje"| Manifest
     end
 
-    subgraph External[Zewnętrzne Procesy]
-        LSP[Language Server]
-        CLI[Zewnętrzne aplikacje/CLI]
+    subgraph WebviewContext["Webview Panel (Czat)"]
+        ChatUI["Interfejs UI (HTML / CSS / JS / React)"]
     end
 
-    subgraph WebviewContext[Webview iframe]
-        UI[Niestandardowe UI \n HTML/JS/CSS]
+    subgraph External["Usługi Zewnętrzne"]
+        VapiAPI["Vapi Cloud (LLM / Voice / Chat)"]
     end
 
-    Core <-->|Komunikacja IPC| ExtHost
-    Ext <-->|Message Passing| UI
-    Ext <-->|Protokół LSP / Spawn| External
+    CoreUI <-->|"Proces IPC"| ExtHost
+    Main <-->|"Message Passing (postMessage)"| ChatUI
+    VapiClient <-->|"Połączenie HTTP / WebSocket"| VapiAPI
 ```
 
 ---
 
-### Przepływ i Cykl Życia (Flow Diagram)
+### Pełny Cykl Życia i Komunikacja Czatu (Sequence Diagram)
 
 ```mermaid
-flowchart TD
-    Start([Uruchomienie VS Code])
-    Inactive[Wtyczka w stanie spoczynku]
-    Event{Wystąpienie Zdarzenia Aktywacji \n np. onLanguage, onCommand}
-    ReadManifest[Odczyt package.json]
-    Activate[Wywołanie funkcji activate]
-    Running((Wtyczka Aktywna i Działa))
-    TriggerDeactivate{Zakończenie pracy \n zamknięcie okna / wyłączenie wtyczki}
-    Deactivate[Wywołanie funkcji deactivate]
-    Stop([Zakończenie procesu])
+sequenceDiagram
+    autonumber
+    actor User as Użytkownik
+    participant VSCode as VS Code Core
+    participant Ext as Wtyczka (Extension Host)
+    participant Webview as Interfejs Czatu (Webview)
+    participant Vapi as Vapi API
 
-    Start --> Inactive
-    Inactive --> Event
-    Event -->|Dopasowanie do wtyczki| ReadManifest
-    ReadManifest --> Activate
-    Activate -->|Rejestracja komend i zdarzeń| Running
-    Running --> TriggerDeactivate
-    TriggerDeactivate --> Deactivate
-    Deactivate -->|Czyszczenie zasobów| Stop
+    Note over VSCode, Vapi: FAZA 1: Inicjalizacja i Otwarcie Czatu
+    User->>VSCode: Wywołuje komendę (np. skrót klawiszowy)
+    VSCode->>Ext: Uruchamia zdarzenie aktywacji (onCommand)
+    activate Ext
+    Ext->>Ext: Wywołuje funkcję activate()
+    Ext->>Ext: Inicjalizuje klienta Vapi
+    Ext->>VSCode: Żąda utworzenia panelu Webview
+    VSCode->>Webview: Ładuje strukturę HTML/JS
+    Webview-->>User: Wyświetla pusty panel czatu
+    deactivate Ext
+
+    Note over User, Vapi: FAZA 2: Pętla Komunikacji z Vapi
+    User->>Webview: Wpisuje prompt i klika "Wyślij"
+    Webview->>Ext: Przekazuje dane (postMessage)
+    activate Ext
+    Ext->>Vapi: Wysyła zapytanie do API (REST / WebRTC)
+    activate Vapi
+    Note right of Ext: Wtyczka działa w tle (asynchronicznie),<br/>edytor kodu pozostaje responsywny!
+    Vapi-->>Ext: Zwraca odpowiedź (tekst / strumień)
+    deactivate Vapi
+    Ext->>Webview: Przesyła odpowiedź (postMessage)
+    deactivate Ext
+    Webview-->>User: Aktualizuje widok czatu na ekranie
+
+    Note over VSCode, Vapi: FAZA 3: Zakończenie i Sprzątanie
+    User->>VSCode: Zamyka zakładkę czatu
+    VSCode->>Ext: Wywołuje zdarzenie onDidDispose
+    activate Ext
+    Ext->>Ext: Zwalnia pamięć (dispose)
+    Ext->>Vapi: Rozłącza aktywne sesje (jeśli istnieją)
+    deactivate Ext
 ```
