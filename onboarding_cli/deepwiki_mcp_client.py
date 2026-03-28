@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import shutil
 
 
 class DeepWikiMcpClient:
@@ -26,32 +27,48 @@ class DeepWikiMcpClient:
             "repoName": self._repo_name,
             "question": f"[Repository: {self._repo_identifier}]\n{question}",
         }
-        for command in self._build_commands(tool_args):
-            result = self._run(command)
-            if result is None:
-                continue
-            if result.returncode != 0:
+        for cli_binary in self._candidate_binaries():
+            for command in self._build_commands(tool_args, cli_binary):
+                result = self._run(command)
+                if result is None:
+                    continue
+                if result.returncode != 0:
+                    if self._is_cli_syntax_error(result.stderr):
+                        continue
+                    return self._build_process_error(result.stderr)
+
+                parsed = self._parse_output(result.stdout)
+                if parsed:
+                    return parsed
                 if self._is_cli_syntax_error(result.stderr):
                     continue
-                return self._build_process_error(result.stderr)
-
-            parsed = self._parse_output(result.stdout)
-            if parsed:
-                return parsed
-            if self._is_cli_syntax_error(result.stderr):
-                continue
-            return self._build_process_error(result.stderr) or self._fallback_message
+                return self._build_process_error(result.stderr) or self._fallback_message
 
         return (
             "DeepWiki MCP call failed: unsupported CLI command style. "
             "Set DEEPWIKI_MCP_CLI_BIN=remote-mcp-cli or install a compatible MCP CLI."
         )
 
-    def _build_commands(self, tool_args: dict[str, str]) -> list[list[str]]:
+    def _candidate_binaries(self) -> list[str]:
+        binaries: list[str] = []
+        seen: set[str] = set()
+
+        def add(binary: str) -> None:
+            if binary not in seen and shutil.which(binary):
+                binaries.append(binary)
+                seen.add(binary)
+
+        add(self._cli_binary)
+        # If configured binary is the incompatible mcp-cli flavor, try remote-mcp-cli automatically.
+        if self._cli_binary == "mcp-cli":
+            add("remote-mcp-cli")
+        return binaries
+
+    def _build_commands(self, tool_args: dict[str, str], cli_binary: str) -> list[list[str]]:
         serialized_args = json.dumps(tool_args)
         return [
             [
-                self._cli_binary,
+                cli_binary,
                 "call",
                 "--config",
                 self._config_path,
@@ -63,7 +80,7 @@ class DeepWikiMcpClient:
                 serialized_args,
             ],
             [
-                self._cli_binary,
+                cli_binary,
                 "call",
                 "--config-file",
                 self._config_path,
@@ -75,7 +92,7 @@ class DeepWikiMcpClient:
                 serialized_args,
             ],
             [
-                self._cli_binary,
+                cli_binary,
                 "call",
                 self._server_name,
                 "ask_question",

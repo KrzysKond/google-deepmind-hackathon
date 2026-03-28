@@ -122,6 +122,19 @@ def _derive_deepwiki_repo_name(repo_identifier: str) -> str:
     return repo_identifier
 
 
+def _resolve_mcp_config_path() -> str:
+    configured = os.getenv("DEEPWIKI_MCP_CONFIG_PATH", "./mcp_servers.json").strip()
+    configured_path = Path(configured)
+    if configured_path.exists():
+        return configured
+
+    if configured == "./mcp_servers.json":
+        fallback = Path("./mcp_servers.example.json")
+        if fallback.exists():
+            return str(fallback)
+    return configured
+
+
 def load_config() -> AppConfig:
     _load_dotenv(".env")
     repo_identifier = _resolve_repo_identifier()
@@ -131,9 +144,7 @@ def load_config() -> AppConfig:
         vapi_base_url=os.getenv("VAPI_BASE_URL", "https://api.vapi.ai").strip(),
         vapi_chat_path=os.getenv("VAPI_CHAT_PATH", "/chat").strip(),
         vapi_assistant_id=_required("VAPI_ASSISTANT_ID"),
-        deepwiki_mcp_config_path=os.getenv(
-            "DEEPWIKI_MCP_CONFIG_PATH", "./mcp_servers.json"
-        ).strip(),
+        deepwiki_mcp_config_path=_resolve_mcp_config_path(),
         deepwiki_mcp_server=os.getenv("DEEPWIKI_MCP_SERVER", "deepwiki").strip(),
         deepwiki_mcp_cli_bin=os.getenv("DEEPWIKI_MCP_CLI_BIN", "remote-mcp-cli").strip(),
         deepwiki_repo_name=_derive_deepwiki_repo_name(repo_identifier),

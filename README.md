@@ -6,6 +6,8 @@ It combines:
 - **DeepWiki MCP** for repository-aware context (`ask_question` tool)
 - **Vapi** for conversational final answers
 
+The CLI runs in MCP-only mode for knowledge grounding: if DeepWiki MCP context is unavailable, it returns an MCP error instead of generating a non-grounded answer.
+
 The assistant is optimized for common onboarding questions:
 - what the project is for
 - how to build/run it
@@ -39,6 +41,8 @@ cp env.example .env
 ```bash
 cp mcp_servers.example.json mcp_servers.json
 ```
+
+If `mcp_servers.json` is missing, the app automatically falls back to `mcp_servers.example.json`.
 
 ## 3) Install
 
